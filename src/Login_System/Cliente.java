@@ -28,21 +28,22 @@ public class Cliente extends Frame implements ActionListener {
         setVisible(true);
     }
 
-    public static void main(String[] args) {
-        Cliente cliente = new Cliente();
-        try {
-            sfd = new Socket("10.235.63.216", 8000);
-            SalidaSocket = new DataOutputStream(new BufferedOutputStream(sfd.getOutputStream()));
-            SalidaSocket.writeUTF("Jeison");
-            SalidaSocket.flush();
-        } catch (UnknownHostException uhe) {
-            System.out.println("No se puede acceder al servidor.");
-            System.exit(1);
-        } catch (IOException ioe) {
-            System.out.println("Comunicación rechazada.");
-            System.exit(1);
-        }
+public static void main(String[] args) {
+    Cliente cliente = new Cliente();
+    try {
+        sfd = new Socket("192.168.99.70", 8000);
+        SalidaSocket = new DataOutputStream(new BufferedOutputStream(sfd.getOutputStream()));
+        SalidaSocket.writeUTF("Jeison");
+        SalidaSocket.flush();
+        System.out.println("Cliente conectado y SalidaSocket inicializado correctamente.");
+    } catch (UnknownHostException uhe) {
+        System.out.println("No se puede acceder al servidor: " + uhe.getMessage());
+        System.exit(1);
+    } catch (IOException ioe) {
+        System.out.println("Comunicación rechazada: " + ioe.getMessage());
+        System.exit(1);
     }
+}
 
     public void actionPerformed(ActionEvent e) {
         if (e.getActionCommand().equals("Cargar Archivo")) {
@@ -64,27 +65,32 @@ public class Cliente extends Frame implements ActionListener {
         }
     }
 
-    private void enviarArchivo(File file) throws IOException {
-// Crear un buffer para leer el archivo en bloques de bytes
+   private void enviarArchivo(File file) throws IOException {
+    if (SalidaSocket != null) { // Verificar si SalidaSocket está inicializado
         byte[] buffer = new byte[1024];
         int bytesRead;
         long fileSize = file.length();
-        try ( FileInputStream fileInputStream = new FileInputStream(file)) {
-// Enviar el nombre del archivo y su tamaño al servidor
+
+        try (FileInputStream fileInputStream = new FileInputStream(file)) {
             SalidaSocket.writeUTF(file.getName());
             SalidaSocket.flush();
             SalidaSocket.writeLong(fileSize);
             SalidaSocket.flush();
-            // Leer y enviar el contenido del archivo al servidor en bloques
+
             while ((bytesRead = fileInputStream.read(buffer)) != -1) {
                 SalidaSocket.write(buffer, 0, bytesRead);
             }
             SalidaSocket.flush();
+
             entrada.append("Archivo enviado: " + file.getName() + "\n");
         } catch (IOException e) {
             System.out.println("Error al enviar el archivo: " + e.getMessage());
         }
+    } else {
+        System.out.println("SalidaSocket no está inicializado. No se puede enviar el archivo.");
     }
+
+}
 
     public boolean handleEvent(Event e) {
         if ((e.target == this) && (e.id == Event.WINDOW_DESTROY)) {
